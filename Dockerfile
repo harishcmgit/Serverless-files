@@ -90,16 +90,9 @@ RUN wget -O /comfyui/models/upscale_models/4x-UltraSharp.pth \
 # Extra FLUX FP8
 RUN wget -O /comfyui/models/diffusion_models/flux1-dev-fp8-e4m3fn.safetensors \
     https://huggingface.co/Kijai/flux-fp8/resolve/main/flux1-dev-fp8-e4m3fn.safetensors
-
-# =======================================================
-# 6. INPUT FILES
-# =======================================================
 RUN wget -O /comfyui/input/file.blend \
     https://huggingface.co/Srivarshan7/my-assets/resolve/b61a31e/file.blend
 
-COPY scene_destination.png /comfyui/input/
-COPY curtain_mask.png /comfyui/input/
-COPY processed_IMG20250919150037.jpg /comfyui/input/
 
 # =======================================================
 # 7. EXPOSE PORT (DOCUMENTATION)
