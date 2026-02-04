@@ -93,7 +93,6 @@ RUN wget -O /comfyui/models/diffusion_models/flux1-dev-fp8-e4m3fn.safetensors \
 RUN wget -O /comfyui/input/file.blend \
     https://huggingface.co/Srivarshan7/my-assets/resolve/b61a31e/file.blend
 
-
 # =======================================================
 # 7. EXPOSE PORT (DOCUMENTATION)
 # =======================================================
