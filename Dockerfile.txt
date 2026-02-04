@@ -39,11 +39,17 @@ RUN comfy node install --exit-on-fail comfyui_layerstyle@2.0.38
 RUN comfy node install --exit-on-fail ComfyUI_AdvancedRefluxControl
 
 # =======================================================
-# 4. COPY LOCAL CUSTOM NODES (From your GitHub Repo)
+# 4. COPY LOCAL CUSTOM NODES (Corrected Folder Names)
 # =======================================================
-COPY comfyui_document_scanner /comfyui/custom_nodes/comfyui_document_scanner
-COPY ComfyUI_SeamlessPattern /comfyui/custom_nodes/ComfyUI_SeamlessPattern
-COPY ComfyUI_blender_render /comfyui/custom_nodes/ComfyUI_blender_render
+
+# 1. Matches "confyUI_ds" in your screenshot
+COPY confyUI_ds /comfyui/custom_nodes/comfyui_document_scanner
+
+# 2. Matches "ComfyUI_SeamlessPattern-master" in your screenshot
+COPY ComfyUI_SeamlessPattern-master /comfyui/custom_nodes/ComfyUI_SeamlessPattern
+
+# 3. Matches "comfyui_br" in your screenshot
+COPY comfyui_br /comfyui/custom_nodes/ComfyUI_blender_render
 
 # =======================================================
 # 5. DOWNLOAD MODELS (Using wget - Matches your list)
