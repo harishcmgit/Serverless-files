@@ -4,6 +4,13 @@
 #FROM runpod/worker-comfyui:5.5.1-base
 FROM runpod/base:cuda12.1
 
+WORKDIR /workspace
+
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git
+WORKDIR /workspace/ComfyUI
+
+RUN pip install -r requirements.txt
+
 # =======================================================
 # 1. SYSTEM DEPENDENCIES (Blender + libs)
 # =======================================================
