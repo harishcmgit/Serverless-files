@@ -1,7 +1,8 @@
 # =======================================================
 # Base image: RunPod ComfyUI Worker (BEST choice)
 # =======================================================
-FROM runpod/worker-comfyui:5.5.1-base
+#FROM runpod/worker-comfyui:5.5.1-base
+FROM runpod/base:cuda12.1
 
 # =======================================================
 # 1. SYSTEM DEPENDENCIES (Blender + libs)
