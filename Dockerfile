@@ -73,8 +73,8 @@ RUN wget -O /comfyui/models/upscale_models/4x-UltraSharp.pth https://huggingface
 # Extra Flux FP8
 RUN wget -O /comfyui/models/diffusion_models/flux1-dev-fp8-e4m3fn.safetensors https://huggingface.co/Kijai/flux-fp8/resolve/main/flux1-dev-fp8-e4m3fn.safetensors
 
-# BLEND File
-RUN wget -O /comfyui/input/file.blend https://huggingface.co/Srivarshan7/my-assets/resolve/b61a31e/file.blend
+# ✅ CHANGE: Download as 'untitled.blend' to match the server's expected list
+RUN wget -O /comfyui/input/untitled.blend https://huggingface.co/Srivarshan7/my-assets/resolve/b61a31e/file.blend
 
-# ⚠️ CRITICAL: DO NOT ADD "CMD python handler.py"
-# The base image already has the correct startup command.
+# ✅ ADD: Set permissions so the node can load the file without "Access Denied"
+RUN chmod 644 /comfyui/input/untitled.blend
