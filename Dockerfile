@@ -4,9 +4,8 @@ FROM runpod/worker-comfyui:5.5.1-base
 USER root
 
 # =======================================================
-# 1. SYSTEM DEPENDENCIES & BLENDER INSTALLATION
+# 1. SYSTEM DEPENDENCIES (Blender Requirements)
 # =======================================================
-# ✅ FIX: Using 'libgl1' (Modern) instead of 'libgl1-mesa-glx'
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -50,13 +49,15 @@ RUN comfy node install --exit-on-fail comfyui_layerstyle@2.0.38
 RUN comfy node install --exit-on-fail ComfyUI_AdvancedRefluxControl
 
 # =======================================================
-# 4. COPY YOUR LOCAL NODES (The Fix)
+# 4. COPY YOUR LOCAL NODES
 # =======================================================
-# ⚠️ We use COPY instead of GIT CLONE to avoid dead links
-# Ensure these folders exist in your GitHub Repo!
+# Ensure these names MATCH EXACTLY your GitHub folders
 COPY confyUI_ds /comfyui/custom_nodes/comfyui_document_scanner
 COPY ComfyUI_SeamlessPattern-master /comfyui/custom_nodes/ComfyUI_SeamlessPattern
 COPY comfyui_br /comfyui/custom_nodes/ComfyUI_blender_render
+
+# Install requirements
+RUN pip install -r /comfyui/custom_nodes/ComfyUI_blender_render/requirements.txt || true
 
 # =======================================================
 # 5. DOWNLOAD MODELS
@@ -75,7 +76,18 @@ RUN mkdir -p /comfyui/models/blender
 RUN wget -O /comfyui/models/blender/file.blend https://huggingface.co/Srivarshan7/my-assets/resolve/b61a31e/file.blend
 
 # =======================================================
-# 6. STARTUP COMMAND
+# 6. STARTUP SCRIPT (THE FIX FOR EXIT CODE 2)
 # =======================================================
-ENV DISPLAY=:99
-CMD bash -c "Xvfb :99 -screen 0 1024x768x24 & exec python -u /rp_handler.py"
+# We write a physical script file instead of using a complex CMD
+RUN echo '#!/bin/bash' > /start.sh && \
+    echo 'echo "🚀 Starting Virtual Monitor (Xvfb)..."' >> /start.sh && \
+    echo 'Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &' >> /start.sh && \
+    echo 'export DISPLAY=:99' >> /start.sh && \
+    echo 'echo "⏳ Waiting for Xvfb..."' >> /start.sh && \
+    echo 'sleep 3' >> /start.sh && \
+    echo 'echo "✅ Starting RunPod Handler..."' >> /start.sh && \
+    echo 'exec python -u /rp_handler.py' >> /start.sh && \
+    chmod +x /start.sh
+
+# Use the script as the startup command
+CMD ["/start.sh"]
