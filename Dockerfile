@@ -4,16 +4,17 @@ FROM runpod/worker-comfyui:5.5.1-base
 USER root
 
 # =======================================================
-# 1. SYSTEM DEPENDENCIES & BLENDER INSTALLATION
+# 1. SYSTEM DEPENDENCIES (UPDATED FOR 2025)
 # =======================================================
-# Install the system libraries Blender needs to run (but NOT blender itself yet)
+# ⚠️ FIX: Removed 'libgl1-mesa-glx' (It caused the crash)
+# ⚠️ ADDED: 'libgl1' (The modern replacement)
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     wget \
     xvfb \
     xz-utils \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     libxrender1 \
     libsm6 \
@@ -22,8 +23,8 @@ RUN apt-get update && apt-get install -y \
     libxkbcommon-x11-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# ⬇️ MANUAL BLENDER DOWNLOAD (The Fix)
-# We download Blender 4.1 directly, extract it, and link it to /usr/bin/blender
+# ⬇️ MANUAL BLENDER DOWNLOAD (Blender 4.1)
+# This is safer than 'apt-get install blender' because we control the version.
 RUN wget https://download.blender.org/release/Blender4.1/blender-4.1.0-linux-x64.tar.xz \
     && tar -xvf blender-4.1.0-linux-x64.tar.xz -C /usr/local/ \
     && mv /usr/local/blender-4.1.0-linux-x64 /usr/local/blender \
@@ -50,7 +51,7 @@ RUN comfy node install --exit-on-fail comfyui-rmbg@3.0.0
 RUN comfy node install --exit-on-fail comfyui_layerstyle@2.0.38
 RUN comfy node install --exit-on-fail ComfyUI_AdvancedRefluxControl
 
-# ⚠️ INSTALL THE BLENDER NODE MANUALLY
+# ⚠️ INSTALL BLENDER NODE MANUALLY
 WORKDIR /comfyui/custom_nodes
 RUN git clone https://github.com/StartHua/ComfyUI-BlenderAI.git
 RUN pip install -r ComfyUI-BlenderAI/requirements.txt || true
