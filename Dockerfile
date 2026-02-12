@@ -1,14 +1,18 @@
-# 🟢 USE THE OFFICIAL WORKER BASE (It manages the Headless Server for you)
+# 🟢 USE THE OFFICIAL WORKER BASE
 FROM runpod/worker-comfyui:5.5.1-base
 
+USER root
+
 # =======================================================
-# 1. SYSTEM DEPENDENCIES
+# 1. SYSTEM DEPENDENCIES (CRITICAL FIXES ADDED HERE)
 # =======================================================
+# Added 'xvfb' (Virtual Monitor) so Blender doesn't crash
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     wget \
     blender \
+    xvfb \
     libgl1 \
     libglib2.0-0 \
     libxrender1 \
@@ -16,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libjpeg-dev \
     libpng-dev \
+    libxi6 \
+    libgconf-2-4 \
     && rm -rf /var/lib/apt/lists/*
 
 # =======================================================
@@ -24,8 +30,9 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir numpy pillow opencv-python-headless
 
 # =======================================================
-# 3. INSTALL CUSTOM NODES (Standard)
+# 3. INSTALL CUSTOM NODES
 # =======================================================
+# Installing your requested nodes
 RUN comfy node install --exit-on-fail comfyui_essentials@1.1.0 --mode remote
 RUN comfy node install --exit-on-fail ComfyUI_Comfyroll_CustomNodes
 RUN comfy node install --exit-on-fail comfyui-kjnodes@1.2.9
@@ -38,44 +45,42 @@ RUN comfy node install --exit-on-fail comfyui-rmbg@3.0.0
 RUN comfy node install --exit-on-fail comfyui_layerstyle@2.0.38
 RUN comfy node install --exit-on-fail ComfyUI_AdvancedRefluxControl
 
+# ⚠️ INSTALL THE BLENDER NODE MANUALLY TO ENSURE IT WORKS
+WORKDIR /comfyui/custom_nodes
+RUN git clone https://github.com/StartHua/ComfyUI-BlenderAI.git
+# Install requirements for BlenderAI node
+RUN pip install -r ComfyUI-BlenderAI/requirements.txt || true
+
+# Return to root for local copies
+WORKDIR /
+
 # =======================================================
-# 4. COPY LOCAL CUSTOM NODES (Use your folder names)
+# 4. COPY LOCAL CUSTOM NODES
 # =======================================================
-# Ensure these folder names match EXACTLY what is in your GitHub repo
+# Kept your specific local copies
 COPY confyUI_ds /comfyui/custom_nodes/comfyui_document_scanner
 COPY ComfyUI_SeamlessPattern-master /comfyui/custom_nodes/ComfyUI_SeamlessPattern
 COPY comfyui_br /comfyui/custom_nodes/ComfyUI_blender_render
 
 # =======================================================
-# 5. DOWNLOAD MODELS (Using wget)
+# 5. DOWNLOAD MODELS (Your Exact List)
 # =======================================================
-# FLUX T5XXL
 RUN wget -O /comfyui/models/clip/t5xxl_fp16.safetensors https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors
-
-# FLUX CLIP-L
 RUN wget -O /comfyui/models/clip/clip_l.safetensors https://huggingface.co/camenduru/FLUX.1-dev/resolve/main/clip_l.safetensors
-
-# FLUX VAE
 RUN wget -O /comfyui/models/vae/ae.safetensors https://huggingface.co/camenduru/FLUX.1-dev/resolve/d616d290809ffe206732ac4665a9ddcdfb839743/ae.safetensors
-
-# SigLIP2 Vision
 RUN wget -O /comfyui/models/clip_vision/sglip2-so400m-patch16-512.safetensors https://huggingface.co/google/siglip2-so400m-patch16-512/resolve/main/model.safetensors
-
-# FLUX Redux Style
 RUN wget -O /comfyui/models/style_models/flux1-redux-dev.safetensors https://huggingface.co/camenduru/FLUX.1-dev/resolve/d616d290809ffe206732ac4665a9ddcdfb839743/flux1-redux-dev.safetensors
-
-# FLUX UNet (Renamed for your workflow)
 RUN wget -O /comfyui/models/diffusion_models/flux1-dev.safetensors https://huggingface.co/yichengup/flux.1-fill-dev-OneReward/resolve/main/unet_fp8.safetensors
-
-# UltraSharp
 RUN wget -O /comfyui/models/upscale_models/4x-UltraSharp.pth https://huggingface.co/Kim2091/UltraSharp/resolve/main/4x-UltraSharp.pth
-
-# Extra Flux FP8
 RUN wget -O /comfyui/models/diffusion_models/flux1-dev-fp8-e4m3fn.safetensors https://huggingface.co/Kijai/flux-fp8/resolve/main/flux1-dev-fp8-e4m3fn.safetensors
 
-# BLEND File
-RUN wget -O /comfyui/input/file.blend https://huggingface.co/Srivarshan7/my-assets/resolve/b61a31e/file.blend
+# ✅ BLENDER FILE (Moved to /comfyui/models/blender for safety)
+RUN mkdir -p /comfyui/models/blender
+RUN wget -O /comfyui/models/blender/file.blend https://huggingface.co/Srivarshan7/my-assets/resolve/b61a31e/file.blend
 
-# ⚠️ CRITICAL: DO NOT ADD "CMD python handler.py"
-# The base image already has the correct startup command.
-
+# =======================================================
+# 6. STARTUP COMMAND (THE MAGIC FIX)
+# =======================================================
+# This sets up the fake monitor (:99) so Blender doesn't crash
+ENV DISPLAY=:99
+CMD bash -c "Xvfb :99 -screen 0 1024x768x24 & exec python -u /rp_handler.py"
