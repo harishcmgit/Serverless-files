@@ -4,10 +4,9 @@ FROM runpod/worker-comfyui:5.5.1-base
 USER root
 
 # =======================================================
-# 1. SYSTEM DEPENDENCIES (UPDATED FOR 2025)
+# 1. SYSTEM DEPENDENCIES & BLENDER INSTALLATION
 # =======================================================
-# ⚠️ FIX: Removed 'libgl1-mesa-glx' (It caused the crash)
-# ⚠️ ADDED: 'libgl1' (The modern replacement)
+# ✅ FIX: Using 'libgl1' (Modern) instead of 'libgl1-mesa-glx'
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -24,7 +23,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ⬇️ MANUAL BLENDER DOWNLOAD (Blender 4.1)
-# This is safer than 'apt-get install blender' because we control the version.
 RUN wget https://download.blender.org/release/Blender4.1/blender-4.1.0-linux-x64.tar.xz \
     && tar -xvf blender-4.1.0-linux-x64.tar.xz -C /usr/local/ \
     && mv /usr/local/blender-4.1.0-linux-x64 /usr/local/blender \
@@ -37,7 +35,7 @@ RUN wget https://download.blender.org/release/Blender4.1/blender-4.1.0-linux-x64
 RUN pip install --no-cache-dir numpy pillow opencv-python-headless
 
 # =======================================================
-# 3. INSTALL CUSTOM NODES
+# 3. INSTALL STANDARD CUSTOM NODES
 # =======================================================
 RUN comfy node install --exit-on-fail comfyui_essentials@1.1.0 --mode remote
 RUN comfy node install --exit-on-fail ComfyUI_Comfyroll_CustomNodes
@@ -51,17 +49,11 @@ RUN comfy node install --exit-on-fail comfyui-rmbg@3.0.0
 RUN comfy node install --exit-on-fail comfyui_layerstyle@2.0.38
 RUN comfy node install --exit-on-fail ComfyUI_AdvancedRefluxControl
 
-# ⚠️ INSTALL BLENDER NODE MANUALLY
-WORKDIR /comfyui/custom_nodes
-RUN git clone https://github.com/StartHua/ComfyUI-BlenderAI.git
-RUN pip install -r ComfyUI-BlenderAI/requirements.txt || true
-
-# Return to root
-WORKDIR /
-
 # =======================================================
-# 4. COPY LOCAL CUSTOM NODES
+# 4. COPY YOUR LOCAL NODES (The Fix)
 # =======================================================
+# ⚠️ We use COPY instead of GIT CLONE to avoid dead links
+# Ensure these folders exist in your GitHub Repo!
 COPY confyUI_ds /comfyui/custom_nodes/comfyui_document_scanner
 COPY ComfyUI_SeamlessPattern-master /comfyui/custom_nodes/ComfyUI_SeamlessPattern
 COPY comfyui_br /comfyui/custom_nodes/ComfyUI_blender_render
