@@ -4,12 +4,11 @@ FROM runpod/worker-comfyui:5.5.1-base
 USER root
 
 # =======================================================
-# 1. SYSTEM DEPENDENCIES & BLENDER INSTALLATION
+# 1. SYSTEM DEPENDENCIES
 # =======================================================
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
     wget \
+    unzip \
     xvfb \
     xz-utils \
     libgl1 \
@@ -23,8 +22,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ⬇️ MANUAL BLENDER DOWNLOAD
-RUN wget https://download.blender.org/release/Blender4.1/blender-4.1.0-linux-x64.tar.xz \
-    && tar -xvf blender-4.1.0-linux-x64.tar.xz -C /usr/local/ \
+RUN wget -q https://download.blender.org/release/Blender4.1/blender-4.1.0-linux-x64.tar.xz \
+    && tar -xf blender-4.1.0-linux-x64.tar.xz -C /usr/local/ \
     && mv /usr/local/blender-4.1.0-linux-x64 /usr/local/blender \
     && ln -s /usr/local/blender/blender /usr/bin/blender \
     && rm blender-4.1.0-linux-x64.tar.xz
@@ -50,43 +49,42 @@ RUN comfy node install --exit-on-fail comfyui_layerstyle@2.0.38
 RUN comfy node install --exit-on-fail ComfyUI_AdvancedRefluxControl
 
 # =======================================================
-# 4. COPY YOUR LOCAL NODES
+# 4. COPY YOUR LOCAL NODES (Updated Names)
 # =======================================================
-COPY confyUI_ds /comfyui/custom_nodes/comfyui_document_scanner
-COPY ComfyUI_SeamlessPattern-master /comfyui/custom_nodes/ComfyUI_SeamlessPattern
-COPY comfyui_br /comfyui/custom_nodes/ComfyUI_blender_render
 
-# Install requirements
-RUN pip install -r /comfyui/custom_nodes/ComfyUI_blender_render/requirements.txt || true
+# 🟢 NODE 1: DOCUMENT SCANNER
+# Source (GitHub): ComfyUI_ds  ->  Dest (Container): ComfyUI_Document_Scanner
+COPY ComfyUI_ds /comfyui/custom_nodes/ComfyUI_Document_Scanner
+
+# 🟢 NODE 2: SEAMLESS PATTERN
+# Source (GitHub): ComfyUI_sp  ->  Dest (Container): ComfyUI_SeamlessPattern
+COPY ComfyUI_sp /comfyui/custom_nodes/ComfyUI_SeamlessPattern
+
+# 🟢 NODE 3: BLENDER RENDER
+# Source (GitHub): ComfyUI_br  ->  Dest (Container): ComfyUI_BlenderAI
+COPY ComfyUI_br /comfyui/custom_nodes/ComfyUI_BlenderAI
+
+# ⚠️ INSTALL REQUIREMENTS
+RUN pip install -r /comfyui/custom_nodes/ComfyUI_BlenderAI/requirements.txt || true
 
 # =======================================================
 # 5. DOWNLOAD MODELS
 # =======================================================
-RUN wget -O /comfyui/models/clip/t5xxl_fp16.safetensors https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors
-RUN wget -O /comfyui/models/clip/clip_l.safetensors https://huggingface.co/camenduru/FLUX.1-dev/resolve/main/clip_l.safetensors
-RUN wget -O /comfyui/models/vae/ae.safetensors https://huggingface.co/camenduru/FLUX.1-dev/resolve/d616d290809ffe206732ac4665a9ddcdfb839743/ae.safetensors
-RUN wget -O /comfyui/models/clip_vision/sglip2-so400m-patch16-512.safetensors https://huggingface.co/google/siglip2-so400m-patch16-512/resolve/main/model.safetensors
-RUN wget -O /comfyui/models/style_models/flux1-redux-dev.safetensors https://huggingface.co/camenduru/FLUX.1-dev/resolve/d616d290809ffe206732ac4665a9ddcdfb839743/flux1-redux-dev.safetensors
-RUN wget -O /comfyui/models/diffusion_models/flux1-dev.safetensors https://huggingface.co/yichengup/flux.1-fill-dev-OneReward/resolve/main/unet_fp8.safetensors
-RUN wget -O /comfyui/models/upscale_models/4x-UltraSharp.pth https://huggingface.co/Kim2091/UltraSharp/resolve/main/4x-UltraSharp.pth
-RUN wget -O /comfyui/models/diffusion_models/flux1-dev-fp8-e4m3fn.safetensors https://huggingface.co/Kijai/flux-fp8/resolve/main/flux1-dev-fp8-e4m3fn.safetensors
+RUN wget -q -O /comfyui/models/clip/t5xxl_fp16.safetensors https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors
+RUN wget -q -O /comfyui/models/clip/clip_l.safetensors https://huggingface.co/camenduru/FLUX.1-dev/resolve/main/clip_l.safetensors
+RUN wget -q -O /comfyui/models/vae/ae.safetensors https://huggingface.co/camenduru/FLUX.1-dev/resolve/d616d290809ffe206732ac4665a9ddcdfb839743/ae.safetensors
+RUN wget -q -O /comfyui/models/clip_vision/sglip2-so400m-patch16-512.safetensors https://huggingface.co/google/siglip2-so400m-patch16-512/resolve/main/model.safetensors
+RUN wget -q -O /comfyui/models/style_models/flux1-redux-dev.safetensors https://huggingface.co/camenduru/FLUX.1-dev/resolve/d616d290809ffe206732ac4665a9ddcdfb839743/flux1-redux-dev.safetensors
+RUN wget -q -O /comfyui/models/diffusion_models/flux1-dev.safetensors https://huggingface.co/yichengup/flux.1-fill-dev-OneReward/resolve/main/unet_fp8.safetensors
+RUN wget -q -O /comfyui/models/upscale_models/4x-UltraSharp.pth https://huggingface.co/Kim2091/UltraSharp/resolve/main/4x-UltraSharp.pth
+RUN wget -q -O /comfyui/models/diffusion_models/flux1-dev-fp8-e4m3fn.safetensors https://huggingface.co/Kijai/flux-fp8/resolve/main/flux1-dev-fp8-e4m3fn.safetensors
 
 # ✅ BLENDER FILE
 RUN mkdir -p /comfyui/models/blender
-RUN wget -O /comfyui/models/blender/file.blend https://huggingface.co/Srivarshan7/my-assets/resolve/b61a31e/file.blend
+RUN wget -q -O /comfyui/models/blender/file.blend https://huggingface.co/Srivarshan7/my-assets/resolve/b61a31e/file.blend
 
 # =======================================================
-# 6. STARTUP SCRIPT (IMPROVED)
+# 6. STARTUP COMMAND
 # =======================================================
-# We add a check loop to ensure Xvfb is actually running before moving on
-RUN echo '#!/bin/bash' > /start.sh && \
-    echo 'echo "🚀 Starting Virtual Monitor (Xvfb)..."' >> /start.sh && \
-    echo 'Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &' >> /start.sh && \
-    echo 'export DISPLAY=:99' >> /start.sh && \
-    echo 'echo "⏳ Waiting for Display :99 to be ready..."' >> /start.sh && \
-    echo 'for i in {1..10}; do xdpyinfo -display :99 >/dev/null 2>&1 && break || sleep 1; done' >> /start.sh && \
-    echo 'echo "✅ Display Ready. Starting RunPod Handler..."' >> /start.sh && \
-    echo 'exec python -u /rp_handler.py' >> /start.sh && \
-    chmod +x /start.sh
-
-CMD ["/start.sh"]
+ENV DISPLAY=:99
+CMD Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 & sleep 5 && python -u /rp_handler.py
