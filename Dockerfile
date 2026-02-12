@@ -4,7 +4,7 @@ FROM runpod/worker-comfyui:5.5.1-base
 USER root
 
 # =======================================================
-# 1. SYSTEM DEPENDENCIES (Blender Requirements)
+# 1. SYSTEM DEPENDENCIES & BLENDER INSTALLATION
 # =======================================================
 RUN apt-get update && apt-get install -y \
     git \
@@ -19,9 +19,10 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxi6 \
     libxkbcommon-x11-0 \
+    psmisc \
     && rm -rf /var/lib/apt/lists/*
 
-# ⬇️ MANUAL BLENDER DOWNLOAD (Blender 4.1)
+# ⬇️ MANUAL BLENDER DOWNLOAD
 RUN wget https://download.blender.org/release/Blender4.1/blender-4.1.0-linux-x64.tar.xz \
     && tar -xvf blender-4.1.0-linux-x64.tar.xz -C /usr/local/ \
     && mv /usr/local/blender-4.1.0-linux-x64 /usr/local/blender \
@@ -51,7 +52,6 @@ RUN comfy node install --exit-on-fail ComfyUI_AdvancedRefluxControl
 # =======================================================
 # 4. COPY YOUR LOCAL NODES
 # =======================================================
-# Ensure these names MATCH EXACTLY your GitHub folders
 COPY confyUI_ds /comfyui/custom_nodes/comfyui_document_scanner
 COPY ComfyUI_SeamlessPattern-master /comfyui/custom_nodes/ComfyUI_SeamlessPattern
 COPY comfyui_br /comfyui/custom_nodes/ComfyUI_blender_render
@@ -76,18 +76,17 @@ RUN mkdir -p /comfyui/models/blender
 RUN wget -O /comfyui/models/blender/file.blend https://huggingface.co/Srivarshan7/my-assets/resolve/b61a31e/file.blend
 
 # =======================================================
-# 6. STARTUP SCRIPT (THE FIX FOR EXIT CODE 2)
+# 6. STARTUP SCRIPT (IMPROVED)
 # =======================================================
-# We write a physical script file instead of using a complex CMD
+# We add a check loop to ensure Xvfb is actually running before moving on
 RUN echo '#!/bin/bash' > /start.sh && \
     echo 'echo "🚀 Starting Virtual Monitor (Xvfb)..."' >> /start.sh && \
     echo 'Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &' >> /start.sh && \
     echo 'export DISPLAY=:99' >> /start.sh && \
-    echo 'echo "⏳ Waiting for Xvfb..."' >> /start.sh && \
-    echo 'sleep 3' >> /start.sh && \
-    echo 'echo "✅ Starting RunPod Handler..."' >> /start.sh && \
+    echo 'echo "⏳ Waiting for Display :99 to be ready..."' >> /start.sh && \
+    echo 'for i in {1..10}; do xdpyinfo -display :99 >/dev/null 2>&1 && break || sleep 1; done' >> /start.sh && \
+    echo 'echo "✅ Display Ready. Starting RunPod Handler..."' >> /start.sh && \
     echo 'exec python -u /rp_handler.py' >> /start.sh && \
     chmod +x /start.sh
 
-# Use the script as the startup command
 CMD ["/start.sh"]
